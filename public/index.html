@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VidAssist</title>
+<style>
+body{font-family:Georgia,serif;background:#f4f1ea;color:#1a1a1a;margin:0;padding:24px}
+.wrap{max-width:760px;margin:0 auto}
+h1{font-size:26px;margin:0 0 4px}
+.sub{color:#555;font-size:14px;margin:0 0 20px}
+.box{border:1px solid #c9c2b4;background:#fff;padding:16px;margin-bottom:16px}
+.row{display:flex;gap:8px}
+input{flex:1;padding:10px;border:1px solid #c9c2b4;font-size:15px;font-family:inherit}
+button{padding:10px 16px;border:1px solid #1a1a1a;background:#1a1a1a;color:#fff;cursor:pointer;font-family:inherit}
+button.alt{background:#fff;color:#1a1a1a}
+.status{font-size:13px;color:#555;margin-top:8px;min-height:18px}
+.media{display:flex;gap:16px;align-items:flex-start}
+.media img{width:180px;height:100px;object-fit:cover;border:1px solid #c9c2b4}
+.meta h2{font-size:18px;margin:0 0 4px}
+.meta p{margin:2px 0;font-size:13px;color:#555}
+.actions{margin-top:10px;display:flex;gap:8px}
+.hidden{display:none}
+code{font-family:monospace;font-size:12px;background:#eee;padding:1px 4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>VidAssist</h1>
+  <p class="sub">Paste a link. Get the file.</p>
+
+  <div class="box">
+    <div class="row">
+      <input id="url" placeholder="https://..." />
+      <button id="fetch">Fetch</button>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="box hidden" id="result">
+    <div class="media">
+      <img id="thumb" alt="" />
+      <div class="meta">
+        <h2 id="title"></h2>
+        <p id="uploader"></p>
+        <p id="duration"></p>
+        <p id="source"></p>
+        <div class="actions">
+          <button id="dlVideo">Video</button>
+          <button id="dlAudio" class="alt">Audio</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="box">
+    <p style="margin:0 0 6px;font-size:13px"><b>API</b></p>
+    <p class="status" style="margin:2px 0">POST <code>/api/info</code> {"url":"..."}</p>
+    <p class="status" style="margin:2px 0">GET <code>/api/download?url=...&type=video|audio&title=...</code></p>
+  </div>
+</div>
+
+<script>
+const urlInput=document.getElementById('url');
+const fetchBtn=document.getElementById('fetch');
+const status=document.getElementById('status');
+const result=document.getElementById('result');
+let currentTitle='';
+
+fetchBtn.addEventListener('click', async()=>{
+  const url=urlInput.value.trim();
+  if(!url){status.textContent='Enter a URL.';return;}
+  status.textContent='Fetching...';
+  result.classList.add('hidden');
+  try{
+    const r=await fetch('/api/info',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
+    const d=await r.json();
+    if(!r.ok) throw new Error(d.error||'failed');
+    document.getElementById('thumb').src=d.thumbnail||'';
+    document.getElementById('title').textContent=d.title||'Untitled';
+    document.getElementById('uploader').textContent=d.uploader||'';
+    document.getElementById('duration').textContent=d.duration?d.duration+'s':'';
+    document.getElementById('source').textContent=d.extractor||'';
+    currentTitle=d.title||'';
+    result.classList.remove('hidden');
+    status.textContent='Ready.';
+    document.getElementById('dlVideo').onclick=()=>{
+      window.location.href='/api/download?url='+encodeURIComponent(url)+'&type=video&title='+encodeURIComponent(currentTitle);
+    };
+    document.getElementById('dlAudio').onclick=()=>{
+      window.location.href='/api/download?url='+encodeURIComponent(url)+'&type=audio&title='+encodeURIComponent(currentTitle);
+    };
+  }catch(e){status.textContent='Error: '+e.message;}
+});
+urlInput.addEventListener('keydown',e=>{if(e.key==='Enter')fetchBtn.click();});
+</script>
+</body>
+</html>
