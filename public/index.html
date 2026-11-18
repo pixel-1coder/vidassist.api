@@ -61,6 +61,7 @@ code{font-family:monospace;font-size:12px;background:#eee;padding:1px 4px}
 </div>
 
 <script>
+const API_BASE = location.hostname.includes('github.io') ? 'http://localhost:3000' : '';
 const urlInput=document.getElementById('url');
 const fetchBtn=document.getElementById('fetch');
 const status=document.getElementById('status');
@@ -73,7 +74,7 @@ fetchBtn.addEventListener('click', async()=>{
   status.textContent='Fetching...';
   result.classList.add('hidden');
   try{
-    const r=await fetch('/api/info',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
+    const r=await fetch(API_BASE+'/api/info',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
     const d=await r.json();
     if(!r.ok) throw new Error(d.error||'failed');
     document.getElementById('thumb').src=d.thumbnail||'';
@@ -85,10 +86,10 @@ fetchBtn.addEventListener('click', async()=>{
     result.classList.remove('hidden');
     status.textContent='Ready.';
     document.getElementById('dlVideo').onclick=()=>{
-      window.location.href='/api/download?url='+encodeURIComponent(url)+'&type=video&title='+encodeURIComponent(currentTitle);
+      window.location.href=API_BASE+'/api/download?url='+encodeURIComponent(url)+'&type=video&title='+encodeURIComponent(currentTitle);
     };
     document.getElementById('dlAudio').onclick=()=>{
-      window.location.href='/api/download?url='+encodeURIComponent(url)+'&type=audio&title='+encodeURIComponent(currentTitle);
+      window.location.href=API_BASE+'/api/download?url='+encodeURIComponent(url)+'&type=audio&title='+encodeURIComponent(currentTitle);
     };
   }catch(e){status.textContent='Error: '+e.message;}
 });
