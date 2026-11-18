@@ -131,29 +131,36 @@ app.get('/api/download', async (req, res) => {
     return;
   }
 
-  const isAudio2 = isAudio;
-  const args = ['--no-playlist', '--no-warnings', '-q'];
-  if (isAudio2) {
-    args.push('-f', 'bestaudio/best', '-x', '--audio-format', 'mp3', '--audio-quality', '0');
-  } else {
-    args.push('-f', quality || 'bestvideo+bestaudio/best', '--merge-output-format', 'mp4');
+  if (isAudio) {
+    const args = ['--no-playlist', '--no-warnings', '-q', '-f', 'bestaudio/best', '-x', '--audio-format', 'mp3', '--audio-quality', '0', '--ffmpeg-location', path.dirname(FFMPEG), '-o', '-', url];
+    const p = spawn(YTDLP, args, { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+    const filename = safeName(resolvedTitle) + '.mp3';
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', 'audio/mpeg');
+    p.stdout.pipe(res);
+    let err = '';
+    p.stderr.on('data', d => err += d);
+    p.on('close', code => { if (code !== 0 && !res.headersSent) res.status(500).send(err); });
+    req.on('close', () => { try { p.kill(); } catch {} });
+    return;
   }
-  args.push('--ffmpeg-location', path.dirname(FFMPEG));
-  args.push('-o', '-');
-  args.push(url);
 
+  const tmpFile = path.join(require('os').tmpdir(), `vidassist-${Date.now()}-${Math.random().toString(36).slice(2)}.mp4`);
+  const args = ['--no-playlist', '--no-warnings', '-q', '-f', 'bestvideo[ext=mp4][vcodec^=avc]+bestaudio[ext=m4a]/best[ext=mp4]/best', '--merge-output-format', 'mp4', '--ffmpeg-location', path.dirname(FFMPEG), '-o', tmpFile, url];
   const p = spawn(YTDLP, args, { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
-  const ext = isAudio ? 'mp3' : 'mp4';
-  const filename = safeName(resolvedTitle) + '.' + ext;
-  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-  res.setHeader('Content-Type', isAudio2 ? 'audio/mpeg' : 'video/mp4');
-  p.stdout.pipe(res);
   let err = '';
   p.stderr.on('data', d => err += d);
   p.on('close', code => {
-    if (code !== 0 && !res.headersSent) res.status(500).send(err);
+    if (code !== 0) { try { require('fs').unlinkSync(tmpFile); } catch {} ; if (!res.headersSent) return res.status(500).send(err); return; }
+    const filename = safeName(resolvedTitle) + '.mp4';
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', 'video/mp4');
+    const fs = require('fs');
+    const stream = fs.createReadStream(tmpFile);
+    stream.pipe(res);
+    stream.on('close', () => { try { fs.unlinkSync(tmpFile); } catch {} });
+    req.on('close', () => { try { stream.destroy(); } catch {} });
   });
-  req.on('close', () => { try { p.kill(); } catch {} });
 });
 
 const PORT = process.env.PORT || 3000;
