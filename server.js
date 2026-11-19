@@ -9,8 +9,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-const YTDLP = process.env.YTDLP || 'C:\\Users\\Lenovo\\AppData\\Local\\Programs\\Python\\Python312\\Scripts\\yt-dlp.exe';
-const FFMPEG = process.env.FFMPEG || 'C:\\Users\\Lenovo\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-9.0.2-full_build\\bin\\ffmpeg.exe';
+const YTDLP = process.env.YTDLP || 'yt-dlp';
+const FFMPEG = process.env.FFMPEG || 'ffmpeg';
+const FFMPEG_DIR = path.isAbsolute(FFMPEG) ? path.dirname(FFMPEG) : null;
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 const titleCache = new Map();
 
@@ -132,7 +133,9 @@ app.get('/api/download', async (req, res) => {
   }
 
   if (isAudio) {
-    const args = ['--no-playlist', '--no-warnings', '-q', '-f', 'bestaudio/best', '-x', '--audio-format', 'mp3', '--audio-quality', '0', '--ffmpeg-location', path.dirname(FFMPEG), '-o', '-', url];
+    const args = ['--no-playlist', '--no-warnings', '-q', '-f', 'bestaudio/best', '-x', '--audio-format', 'mp3', '--audio-quality', '0'];
+    if (FFMPEG_DIR) args.push('--ffmpeg-location', FFMPEG_DIR);
+    args.push('-o', '-', url);
     const p = spawn(YTDLP, args, { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
     const filename = safeName(resolvedTitle) + '.mp3';
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -146,7 +149,9 @@ app.get('/api/download', async (req, res) => {
   }
 
   const tmpFile = path.join(require('os').tmpdir(), `vidassist-${Date.now()}-${Math.random().toString(36).slice(2)}.mp4`);
-  const args = ['--no-playlist', '--no-warnings', '-q', '-f', 'bestvideo[ext=mp4][vcodec^=avc]+bestaudio[ext=m4a]/best[ext=mp4]/best', '--merge-output-format', 'mp4', '--ffmpeg-location', path.dirname(FFMPEG), '-o', tmpFile, url];
+  const args = ['--no-playlist', '--no-warnings', '-q', '-f', 'bestvideo[ext=mp4][vcodec^=avc]+bestaudio[ext=m4a]/best[ext=mp4]/best', '--merge-output-format', 'mp4'];
+  if (FFMPEG_DIR) args.push('--ffmpeg-location', FFMPEG_DIR);
+  args.push('-o', tmpFile, url);
   const p = spawn(YTDLP, args, { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
   let err = '';
   p.stderr.on('data', d => err += d);
