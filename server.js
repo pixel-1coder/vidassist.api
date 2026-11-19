@@ -9,8 +9,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-const YTDLP = process.env.YTDLP || 'yt-dlp';
-const FFMPEG = process.env.FFMPEG || 'ffmpeg';
+const ytDlpExec = require('youtube-dl-exec');
+const ffmpegStatic = require('ffmpeg-static');
+const YTDLP = process.env.YTDLP || ytDlpExec.constants.YOUTUBE_DL_PATH;
+const FFMPEG = process.env.FFMPEG || ffmpegStatic;
 const FFMPEG_DIR = path.isAbsolute(FFMPEG) ? path.dirname(FFMPEG) : null;
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 const titleCache = new Map();

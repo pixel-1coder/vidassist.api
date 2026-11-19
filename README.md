@@ -6,13 +6,9 @@ Universal video/audio downloader API + demo UI. Uses yt-dlp + ffmpeg for most si
 
 This project is for personal use only. Download only content you own or have permission to download. Respect copyright laws and the terms of service of each platform. DRM-protected content is not supported and must not be circumvented.
 
-## Prerequisites
+## Setup
 
-- Node.js 18 or newer
-- yt-dlp on your PATH (or set `YTDLP`)
-- ffmpeg on your PATH (or set `FFMPEG`)
-
-## Clone and run
+Everything is installed by npm. No separate downloads needed.
 
 ```bash
 git clone https://github.com/pixel-1coder/vidassist.api.git
@@ -28,10 +24,11 @@ Open http://localhost:3000
 | Variable | Default | Description |
 | --- | --- | --- |
 | `PORT` | `3000` | HTTP port |
-| `YTDLP` | `yt-dlp` | Path to yt-dlp binary |
-| `FFMPEG` | `ffmpeg` | Path to ffmpeg binary |
+| `YTDLP` | bundled | Path to yt-dlp binary |
+| `FFMPEG` | bundled | Path to ffmpeg binary |
 
 ## Notes
 
-- yt-dlp and ffmpeg must be installed and available on PATH.
+- yt-dlp and ffmpeg binaries are bundled with npm install.
 - DRM-protected services are not supported.
+- Temporary video files are written to the OS temp dir and deleted after streaming.
